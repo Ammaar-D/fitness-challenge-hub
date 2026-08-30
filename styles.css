@@ -1,0 +1,25 @@
+﻿body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: #07111e;
+  color: #f8fafc;
+  -webkit-tap-highlight-color: transparent;
+}
+.glass-card {
+  background: rgba(15, 41, 74, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.glass-card-hover:hover {
+  background: rgba(22, 59, 105, 0.75);
+  border-color: rgba(56, 189, 248, 0.3);
+  transform: translateY(-2px);
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1e4e8c;
+  border-radius: 4px;
+}

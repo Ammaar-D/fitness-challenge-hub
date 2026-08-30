@@ -1,0 +1,507 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Monthly Fitness Challenge Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col antialiased pb-24 md:pb-8 selection:bg-sky-400 selection:text-slate-900">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-40 bg-[#07111e]/90 backdrop-blur-md border-b border-white/10 px-4 py-3 sm:px-6">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <i data-lucide="flame" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Fitness Challenge <span class="text-xs px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-400 font-semibold border border-sky-400/30" id="currentMonthBadge">AUGUST 2026</span>
+          </h1>
+          <p class="text-xs text-slate-400">Monthly Habit & Workout Leaderboard</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="userSwitchBtn" onclick="app.openUserModal()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0b1d33] border border-white/10 text-xs font-medium text-slate-200 hover:bg-[#0f294a] transition">
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-400" id="userStatusDot"></div>
+          <span id="activeUserNameDisplay">Ammaar (Admin)</span>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+        </button>
+
+        <button onclick="app.openAdminModal()" title="Admin & Security Hub" class="p-2 rounded-lg bg-[#0b1d33] border border-white/10 text-slate-300 hover:text-sky-400 hover:bg-[#0f294a] transition">
+          <i data-lucide="shield" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- UNAUTHORIZED / PENDING BANNER -->
+    <div id="unauthAlert" class="hidden rounded-xl bg-amber-500/15 border border-amber-500/30 p-4 text-amber-200">
+      <div class="flex items-start gap-3">
+        <i data-lucide="alert-circle" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+        <div class="text-xs sm:text-sm">
+          <span class="font-bold">Pending Authorization:</span> Your account is currently awaiting Admin approval. You can preview the rules and leaderboard, but daily exercise & habit logging is disabled until approved.
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: HOME & INSTRUCTIONS -->
+    <section id="tab-home" class="tab-content space-y-6">
+      
+      <!-- HERO STATS -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="glass-card rounded-2xl p-4 border border-white/10 relative overflow-hidden">
+          <div class="text-slate-400 text-xs font-semibold mb-1">Days Remaining</div>
+          <div class="text-2xl font-extrabold text-white" id="daysLeftCount">--</div>
+          <div class="text-[11px] text-sky-400 mt-1 flex items-center gap-1">
+            <i data-lucide="calendar" class="w-3 h-3"></i> Monthly Cycle
+          </div>
+        </div>
+        
+        <div class="glass-card rounded-2xl p-4 border border-white/10 relative overflow-hidden">
+          <div class="text-slate-400 text-xs font-semibold mb-1">My Habit Score</div>
+          <div class="text-2xl font-extrabold text-emerald-400" id="userMyScore">0 pts</div>
+          <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+            <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-400"></i> Checklist Total
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-white/10 relative overflow-hidden">
+          <div class="text-slate-400 text-xs font-semibold mb-1">My Workout Time</div>
+          <div class="text-2xl font-extrabold text-sky-400" id="userMyHours">0.0 hrs</div>
+          <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+            <i data-lucide="activity" class="w-3 h-3 text-sky-400"></i> Logged Time
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-white/10 relative overflow-hidden">
+          <div class="text-slate-400 text-xs font-semibold mb-1">Active Rank</div>
+          <div class="text-2xl font-extrabold text-amber-400" id="userMyRank">#1</div>
+          <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+            <i data-lucide="award" class="w-3 h-3 text-amber-400"></i> Standings
+          </div>
+        </div>
+      </div>
+
+      <!-- NAVIGATION TILES -->
+      <div>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 px-1">Quick Navigation</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button onclick="app.switchTab('log')" class="glass-card glass-card-hover rounded-2xl p-5 text-left border border-white/10 transition group flex flex-col justify-between h-32">
+            <div class="flex items-center justify-between w-full">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-sky-400 flex items-center justify-center group-hover:scale-110 transition">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+              </div>
+              <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-500 group-hover:text-white transition"></i>
+            </div>
+            <div>
+              <div class="font-bold text-white text-base">Log Today's Effort</div>
+              <div class="text-xs text-slate-400">Checklist & Workout Time</div>
+            </div>
+          </button>
+
+          <button onclick="app.switchTab('leaderboard')" class="glass-card glass-card-hover rounded-2xl p-5 text-left border border-white/10 transition group flex flex-col justify-between h-32">
+            <div class="flex items-center justify-between w-full">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-110 transition">
+                <i data-lucide="trophy" class="w-5 h-5"></i>
+              </div>
+              <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-500 group-hover:text-white transition"></i>
+            </div>
+            <div>
+              <div class="font-bold text-white text-base">View Leaderboard</div>
+              <div class="text-xs text-slate-400">Hours, Points & Podium</div>
+            </div>
+          </button>
+
+          <button onclick="app.switchTab('rules')" class="glass-card glass-card-hover rounded-2xl p-5 text-left border border-white/10 transition group flex flex-col justify-between h-32">
+            <div class="flex items-center justify-between w-full">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
+              </div>
+              <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-500 group-hover:text-white transition"></i>
+            </div>
+            <div>
+              <div class="font-bold text-white text-base">Challenge Rules</div>
+              <div class="text-xs text-slate-400">3-Day Window & Policies</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- INSTRUCTIONS -->
+      <div class="glass-card rounded-2xl p-6 border border-white/10 space-y-4">
+        <div class="flex items-center justify-between border-b border-white/10 pb-4">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-5 h-5 text-sky-400"></i>
+            <h3 class="font-bold text-white text-base">Monthly Challenge Overview</h3>
+          </div>
+          <span class="text-xs px-2.5 py-1 rounded-full bg-blue-900/60 text-slate-300 font-medium">Updated for August</span>
+        </div>
+
+        <div id="instructionsContent" class="text-sm text-slate-300 space-y-3 leading-relaxed">
+          <p>Welcome to this month's private Fitness & Wellness Challenge! Stay consistent, log daily, and compete for the top of the leaderboard.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div class="p-3.5 rounded-xl bg-[#0b1d33]/60 border border-white/5 space-y-1">
+              <div class="font-semibold text-sky-400 flex items-center gap-2 text-xs">
+                <i data-lucide="check-square" class="w-4 h-4"></i> Daily Habits (3 Pts/Day)
+              </div>
+              <p class="text-xs text-slate-400">Drink 2L water, zero cooldrinks/soda, and keep screen time under 4 hours.</p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-[#0b1d33]/60 border border-white/5 space-y-1">
+              <div class="font-semibold text-amber-400 flex items-center gap-2 text-xs">
+                <i data-lucide="timer" class="w-4 h-4"></i> Strict 3-Day Rule
+              </div>
+              <p class="text-xs text-slate-400">Log on time! Submissions can only be backdated up to 3 days unless approved by Admin.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: DAILY LOG & SUBMISSION -->
+    <section id="tab-log" class="tab-content hidden space-y-6">
+      
+      <!-- Date Selector (Enforces 3-Day Rule) -->
+      <div class="glass-card rounded-2xl p-5 border border-white/10 space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+            <i data-lucide="calendar" class="w-4 h-4 text-sky-400"></i> Select Log Date
+          </label>
+          <span id="dateLimitTag" class="text-[11px] font-semibold text-emerald-400 bg-emerald-400/10 px-2.5 py-0.5 rounded-full border border-emerald-400/20">
+            Within 3-Day Allowed Window
+          </span>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2" id="quickDateSelector"></div>
+
+        <div class="pt-2 flex items-center justify-between text-xs text-slate-400">
+          <span id="selectedDateFormatted">Selected: Date</span>
+          <button onclick="app.showCustomDatePrompt()" class="text-sky-400 hover:underline text-xs flex items-center gap-1">
+            <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i> Custom Date
+          </button>
+        </div>
+      </div>
+
+      <!-- SECTION 1: HABIT CHECKLIST -->
+      <div class="glass-card rounded-2xl p-6 border border-white/10 space-y-4">
+        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i> Daily Habit Checklist
+            </h3>
+            <p class="text-xs text-slate-400">Each completed box earns 1 point for the leaderboard.</p>
+          </div>
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" id="dayHabitScoreBadge">
+            0 / 3 Pts
+          </span>
+        </div>
+
+        <div class="space-y-2.5">
+          <label class="flex items-center justify-between p-4 rounded-xl bg-[#0b1d33]/50 hover:bg-[#0b1d33] border border-white/5 hover:border-sky-400/30 cursor-pointer transition select-none">
+            <div class="flex items-center gap-3.5">
+              <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                <i data-lucide="droplet" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-white">Drank 2L Water</div>
+                <div class="text-xs text-slate-400">Hydration target achieved (+1 pt)</div>
+              </div>
+            </div>
+            <input type="checkbox" id="habit_water" onchange="app.toggleHabit('water')" class="w-6 h-6 rounded-md bg-[#07111e] border-white/20 text-sky-400 focus:ring-0 cursor-pointer accent-sky-400">
+          </label>
+
+          <label class="flex items-center justify-between p-4 rounded-xl bg-[#0b1d33]/50 hover:bg-[#0b1d33] border border-white/5 hover:border-sky-400/30 cursor-pointer transition select-none">
+            <div class="flex items-center gap-3.5">
+              <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <i data-lucide="ban" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-white">No Cooldrinks Today</div>
+                <div class="text-xs text-slate-400">Zero sugary sodas/fizzy drinks (+1 pt)</div>
+              </div>
+            </div>
+            <input type="checkbox" id="habit_soda" onchange="app.toggleHabit('soda')" class="w-6 h-6 rounded-md bg-[#07111e] border-white/20 text-sky-400 focus:ring-0 cursor-pointer accent-sky-400">
+          </label>
+
+          <label class="flex items-center justify-between p-4 rounded-xl bg-[#0b1d33]/50 hover:bg-[#0b1d33] border border-white/5 hover:border-sky-400/30 cursor-pointer transition select-none">
+            <div class="flex items-center gap-3.5">
+              <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                <i data-lucide="smartphone" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-white">Screentime Less Than 4 Hours</div>
+                <div class="text-xs text-slate-400">Digital focus target met (+1 pt)</div>
+              </div>
+            </div>
+            <input type="checkbox" id="habit_screen" onchange="app.toggleHabit('screen')" class="w-6 h-6 rounded-md bg-[#07111e] border-white/20 text-sky-400 focus:ring-0 cursor-pointer accent-sky-400">
+          </label>
+        </div>
+      </div>
+
+      <!-- SECTION 2: EXERCISE LOGGER -->
+      <div class="glass-card rounded-2xl p-6 border border-white/10 space-y-4">
+        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i data-lucide="activity" class="w-5 h-5 text-sky-400"></i> Record Exercise Activity
+            </h3>
+            <p class="text-xs text-slate-400">Select preset or type custom exercise and log duration.</p>
+          </div>
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-500/20 text-sky-400 border border-blue-500/30" id="dayWorkoutTotalBadge">
+            0 mins
+          </span>
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-slate-400 mb-1.5 block">Pre-selected Exercises</label>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="app.setExerciseType('Gym')" class="px-3.5 py-1.5 rounded-xl bg-[#0b1d33] border border-white/10 text-xs font-medium text-slate-200 hover:border-sky-400/50 hover:bg-[#0f294a] transition flex items-center gap-1.5">
+              <i data-lucide="dumbbell" class="w-3.5 h-3.5 text-sky-400"></i> Gym
+            </button>
+            <button type="button" onclick="app.setExerciseType('Running')" class="px-3.5 py-1.5 rounded-xl bg-[#0b1d33] border border-white/10 text-xs font-medium text-slate-200 hover:border-sky-400/50 hover:bg-[#0f294a] transition flex items-center gap-1.5">
+              <i data-lucide="footprints" class="w-3.5 h-3.5 text-emerald-400"></i> Running
+            </button>
+            <button type="button" onclick="app.setExerciseType('Walking')" class="px-3.5 py-1.5 rounded-xl bg-[#0b1d33] border border-white/10 text-xs font-medium text-slate-200 hover:border-sky-400/50 hover:bg-[#0f294a] transition flex items-center gap-1.5">
+              <i data-lucide="heart-pulse" class="w-3.5 h-3.5 text-amber-400"></i> Walking
+            </button>
+            <button type="button" onclick="app.setExerciseType('Cycling')" class="px-3.5 py-1.5 rounded-xl bg-[#0b1d33] border border-white/10 text-xs font-medium text-slate-200 hover:border-sky-400/50 hover:bg-[#0f294a] transition flex items-center gap-1.5">
+              <i data-lucide="bike" class="w-3.5 h-3.5 text-purple-400"></i> Cycling
+            </button>
+          </div>
+        </div>
+
+        <form onsubmit="app.addExerciseEntry(event)" class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-medium text-slate-400 mb-1 block">Exercise Name</label>
+              <input type="text" id="exerciseInput" required placeholder="e.g. Gym, Boxing, Pilates..." class="w-full px-4 py-2.5 rounded-xl bg-[#07111e]/80 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-400">
+            </div>
+
+            <div>
+              <label class="text-xs font-medium text-slate-400 mb-1 block">Duration (Minutes)</label>
+              <div class="flex items-center gap-2">
+                <input type="number" id="durationMinutesInput" required min="1" max="600" placeholder="e.g. 45" class="w-full px-4 py-2.5 rounded-xl bg-[#07111e]/80 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-400">
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-sky-400 font-bold text-white text-sm hover:opacity-95 shadow-lg shadow-blue-500/25 shrink-0 flex items-center gap-1.5 transition">
+                  <i data-lucide="plus" class="w-4 h-4"></i> Add
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <div class="pt-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Activities Logged For This Day</h4>
+          <div id="dayExercisesList" class="space-y-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: LEADERBOARD -->
+    <section id="tab-leaderboard" class="tab-content hidden space-y-6">
+      
+      <!-- Sub-Tabs -->
+      <div class="flex rounded-xl bg-[#0b1d33]/80 p-1 border border-white/10">
+        <button onclick="app.switchLeaderboardType('hours')" id="btn-lb-hours" class="flex-1 py-2 rounded-lg text-xs font-bold transition bg-blue-600 text-white shadow-sm flex items-center justify-center gap-1.5">
+          <i data-lucide="clock" class="w-3.5 h-3.5"></i> Exercise Hours
+        </button>
+        <button onclick="app.switchLeaderboardType('points')" id="btn-lb-points" class="flex-1 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1.5">
+          <i data-lucide="check-square" class="w-3.5 h-3.5"></i> Habit Points
+        </button>
+        <button onclick="app.switchLeaderboardType('combined')" id="btn-lb-combined" class="flex-1 py-2 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1.5">
+          <i data-lucide="award" class="w-3.5 h-3.5"></i> Overall Score
+        </button>
+      </div>
+
+      <!-- Podium -->
+      <div class="glass-card rounded-2xl p-6 border border-white/10">
+        <div class="text-center mb-6">
+          <h3 class="text-lg font-bold text-white flex items-center justify-center gap-2">
+            <i data-lucide="crown" class="w-5 h-5 text-amber-400"></i> Monthly Standings
+          </h3>
+          <p class="text-xs text-slate-400" id="leaderboardSubtitle">Ranked by total accumulated workout hours</p>
+        </div>
+
+        <div class="flex items-end justify-center gap-2 sm:gap-4 pt-4 pb-2" id="podiumContainer"></div>
+      </div>
+
+      <!-- Full Table -->
+      <div class="glass-card rounded-2xl p-5 border border-white/10 space-y-3">
+        <div class="flex items-center justify-between border-b border-white/10 pb-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">All Participants</h4>
+          <span class="text-xs text-slate-400" id="totalMembersCount">5 Members</span>
+        </div>
+
+        <div id="leaderboardList" class="space-y-2.5"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: RULES -->
+    <section id="tab-rules" class="tab-content hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 border border-white/10 space-y-5">
+        <div class="flex items-center gap-3 border-b border-white/10 pb-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <i data-lucide="shield-check" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">Challenge Rules & Guidelines</h3>
+            <p class="text-xs text-slate-400">Fair play, timing policies, and monthly score resets</p>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-sm text-slate-300">
+          <div class="p-4 rounded-xl bg-[#0b1d33]/50 border border-white/5 space-y-1.5">
+            <h4 class="font-bold text-white flex items-center gap-2 text-sm">
+              <span class="w-5 h-5 rounded-full bg-sky-400/20 text-sky-400 flex items-center justify-center text-xs">1</span>
+              User Authorization Policy
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              This is a private group challenge (up to 5 participants). New members can view the dashboard immediately upon registering, but must be authorized by Admin before logging workouts or checkmarks.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#0b1d33]/50 border border-white/5 space-y-1.5">
+            <h4 class="font-bold text-white flex items-center gap-2 text-sm">
+              <span class="w-5 h-5 rounded-full bg-amber-400/20 text-amber-400 flex items-center justify-center text-xs">2</span>
+              3-Day Backdating Window
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              To encourage accountability, you may only log entries for today or up to 3 days in the past (Today, -1 day, -2 days, -3 days). Submissions older than 3 days are locked and require Admin authorization override.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#0b1d33]/50 border border-white/5 space-y-1.5">
+            <h4 class="font-bold text-white flex items-center gap-2 text-sm">
+              <span class="w-5 h-5 rounded-full bg-emerald-400/20 text-emerald-400 flex items-center justify-center text-xs">3</span>
+              Scoring System
+            </h4>
+            <ul class="text-xs text-slate-400 list-disc list-inside space-y-1 pt-1">
+              <li><strong class="text-white">Habit Checklist:</strong> 1 point per checkbox per day (Max 3 points/day).</li>
+              <li><strong class="text-white">Exercise Time:</strong> Exact total hours and minutes accumulated across all logged sessions.</li>
+            </ul>
+          </div>
+
+          <div class="p-4 rounded-xl bg-[#0b1d33]/50 border border-white/5 space-y-1.5">
+            <h4 class="font-bold text-white flex items-center gap-2 text-sm">
+              <span class="w-5 h-5 rounded-full bg-purple-400/20 text-purple-400 flex items-center justify-center text-xs">4</span>
+              Monthly Challenge Reset
+            </h4>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Leaderboards refresh automatically each month while maintaining previous cycle data.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MOBILE BOTTOM BAR -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#07111e]/95 backdrop-blur-lg border-t border-white/10 px-4 py-2 sm:hidden">
+    <div class="flex items-center justify-around">
+      <button onclick="app.switchTab('home')" class="nav-btn active flex flex-col items-center gap-1 text-xs text-sky-400 font-semibold transition" id="nav-home">
+        <i data-lucide="home" class="w-5 h-5"></i>
+        <span>Home</span>
+      </button>
+      <button onclick="app.switchTab('log')" class="nav-btn flex flex-col items-center gap-1 text-xs text-slate-400 hover:text-white font-medium transition" id="nav-log">
+        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+        <span>Log Day</span>
+      </button>
+      <button onclick="app.switchTab('leaderboard')" class="nav-btn flex flex-col items-center gap-1 text-xs text-slate-400 hover:text-white font-medium transition" id="nav-leaderboard">
+        <i data-lucide="trophy" class="w-5 h-5"></i>
+        <span>Leaderboard</span>
+      </button>
+      <button onclick="app.switchTab('rules')" class="nav-btn flex flex-col items-center gap-1 text-xs text-slate-400 hover:text-white font-medium transition" id="nav-rules">
+        <i data-lucide="book-open" class="w-5 h-5"></i>
+        <span>Rules</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- USER SWITCH MODAL -->
+  <div id="userModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card rounded-2xl p-6 border border-white/10 max-w-md w-full space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <i data-lucide="users" class="w-5 h-5 text-sky-400"></i> Switch User / Register
+        </h3>
+        <button onclick="app.closeUserModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-2" id="userSelectList"></div>
+
+      <!-- Add New User Form -->
+      <form onsubmit="app.registerUser(event)" class="pt-3 border-t border-white/10 space-y-2">
+        <label class="text-xs font-semibold text-slate-400">Join as New Participant (Up to 5)</label>
+        <div class="flex gap-2">
+          <input type="text" id="newUserNameInput" required placeholder="Enter nickname..." class="flex-1 px-3.5 py-2 rounded-xl bg-[#07111e] border border-white/10 text-white text-xs focus:outline-none focus:border-sky-400">
+          <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white text-xs transition">
+            Request Join
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN MODAL -->
+  <div id="adminModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="glass-card rounded-2xl p-6 border border-white/10 max-w-md w-full space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <i data-lucide="shield" class="w-5 h-5 text-sky-400"></i> Admin & Authorization Control
+        </h3>
+        <button onclick="app.closeAdminModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Admin Passkey Prompt -->
+      <div id="adminAuthSection" class="space-y-3">
+        <p class="text-xs text-slate-400">Enter Admin PIN (Default: <code class="text-sky-400 font-mono">1234</code>) to manage member approvals:</p>
+        <div class="flex gap-2">
+          <input type="password" id="adminPinInput" placeholder="Enter PIN..." class="flex-1 px-3.5 py-2 rounded-xl bg-[#07111e] border border-white/10 text-white text-xs focus:outline-none focus:border-sky-400">
+          <button onclick="app.unlockAdmin()" class="px-4 py-2 rounded-xl bg-sky-400 font-bold text-slate-900 text-xs hover:opacity-90 transition">
+            Unlock
+          </button>
+        </div>
+      </div>
+
+      <!-- Admin Dashboard -->
+      <div id="adminPanelUnlocked" class="hidden space-y-4">
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Member Authorization Whitelist</h4>
+          <div id="adminUserAuthList" class="space-y-2"></div>
+        </div>
+
+        <div class="pt-3 border-t border-white/10 space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Backdating Authorization Override</h4>
+          <p class="text-[11px] text-slate-400">Enable temporary backdating permission beyond 3 days for active user.</p>
+          <button onclick="app.toggleAdminBackdateOverride()" id="adminOverrideBtn" class="w-full py-2 rounded-xl bg-[#0b1d33] border border-amber-500/30 text-amber-300 font-bold text-xs hover:bg-[#0f294a] transition">
+            Unlock & Allow Backdating for All Dates
+          </button>
+        </div>
+
+        <div class="pt-3 border-t border-white/10 space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Monthly Cycle Management</h4>
+          <button onclick="app.resetMonthData()" class="w-full py-2 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 font-bold text-xs hover:bg-red-500/30 transition">
+            Archive & Reset Current Month Leaderboard
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
