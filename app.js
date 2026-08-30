@@ -1,6 +1,13 @@
 const DEFAULT_DATA = {
   users: [
-    { id: 'u_ammaar', name: 'Ammaar', role: 'admin', authorized: true, avatar: '👑' }
+    { 
+      id: 'u_ammaar', 
+      name: 'Ammaar', 
+      role: 'admin', 
+      authorized: true, 
+      avatar: '👑',
+      passwordHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4' // SHA-256 for '1234'
+    }
   ],
   activeUserId: null,
   adminUnlocked: false,
@@ -479,14 +486,6 @@ class FitnessApp {
       `;
     }).join('');
 
-    const targetUser = this.data.users.find(u => u.id === this.selectedAuthUserId);
-    const passContainer = document.getElementById('adminPassInputContainer');
-    if (targetUser && targetUser.role === 'admin') {
-      passContainer.classList.remove('hidden');
-    } else {
-      passContainer.classList.add('hidden');
-    }
-
     if (window.lucide) lucide.createIcons();
   }
 
@@ -495,26 +494,41 @@ class FitnessApp {
     this.renderAuthProfiles();
   }
 
+  async hashPassword(plainText) {
+    const msgBuffer = new TextEncoder().encode(plainText);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   async executeLogin() {
     const targetUser = this.data.users.find(u => u.id === this.selectedAuthUserId);
-    if (!targetUser) return;
+    if (!targetUser) {
+      alert('Please select a profile to log in.');
+      return;
+    }
+
+    const enteredPass = document.getElementById('loginUserPassword').value;
+    if (!enteredPass) {
+      alert('Please enter your profile password.');
+      return;
+    }
+
+    const hashedInput = await this.hashPassword(enteredPass);
+
+    // Verify user password
+    if (targetUser.passwordHash && hashedInput !== targetUser.passwordHash) {
+      alert('Incorrect password! Please try again.');
+      return;
+    }
 
     if (targetUser.role === 'admin') {
-      const pass = document.getElementById('loginAdminPassword').value;
-      const msgBuffer = new TextEncoder().encode(pass);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-      if (hashHex !== this.data.adminPinHash) {
-        alert('Incorrect Admin Password!');
-        return;
-      }
       this.data.adminUnlocked = true;
     }
 
     this.data.activeUserId = targetUser.id;
     this.saveStorage();
+    document.getElementById('loginUserPassword').value = '';
     this.hideAuthGateway();
     this.renderHeader();
     this.renderDateSelector();
@@ -524,7 +538,7 @@ class FitnessApp {
     if (window.lucide) lucide.createIcons();
   }
 
-  executeRegister(e) {
+  async executeRegister(e) {
     e.preventDefault();
     if (this.data.users.length >= 5) {
       alert('Maximum 5 users reached for this private group!');
@@ -532,18 +546,26 @@ class FitnessApp {
     }
 
     const name = document.getElementById('registerNicknameInput').value.trim();
-    if (!name) return;
+    const pass = document.getElementById('registerPasswordInput').value;
+
+    if (!name || !pass) {
+      alert('Please provide both nickname and a password.');
+      return;
+    }
 
     if (this.data.users.some(u => u.name.toLowerCase() === name.toLowerCase())) {
       alert('A user with this name already exists! Please choose another nickname.');
       return;
     }
 
+    const hashedPass = await this.hashPassword(pass);
+
     const newUser = {
       id: 'u_' + Date.now(),
       name: name,
       role: 'member',
       authorized: false,
+      passwordHash: hashedPass,
       avatar: ['🚀', '⚡', '🏆', '🔥', '💪'][this.data.users.length % 5]
     };
 
@@ -553,9 +575,50 @@ class FitnessApp {
     this.saveStorage();
 
     document.getElementById('registerNicknameInput').value = '';
+    document.getElementById('registerPasswordInput').value = '';
     this.hideAuthGateway();
     this.init();
-    alert('Account created! Your status is Pending until approved by Ammaar.');
+    alert('Account created successfully! Your status is Pending until authorized by Ammaar.');
+  }
+
+  async changePassword(e) {
+    e.preventDefault();
+    const user = this.getActiveUser();
+    if (!user) return;
+
+    const currentPass = document.getElementById('currentPassInput').value;
+    const newPass = document.getElementById('newPassInput').value;
+    const confirmPass = document.getElementById('confirmPassInput').value;
+
+    if (newPass !== confirmPass) {
+      alert('New passwords do not match! Please verify.');
+      return;
+    }
+
+    if (newPass.length < 1) {
+      alert('Password cannot be empty.');
+      return;
+    }
+
+    const hashedCurrent = await this.hashPassword(currentPass);
+    if (user.passwordHash && hashedCurrent !== user.passwordHash) {
+      alert('Current password is incorrect! Please try again.');
+      return;
+    }
+
+    const hashedNew = await this.hashPassword(newPass);
+    user.passwordHash = hashedNew;
+
+    // If Admin changed password, update the admin PIN hash as well
+    if (user.role === 'admin') {
+      this.data.adminPinHash = hashedNew;
+    }
+
+    this.saveStorage();
+    document.getElementById('currentPassInput').value = '';
+    document.getElementById('newPassInput').value = '';
+    document.getElementById('confirmPassInput').value = '';
+    alert('Your password has been successfully updated!');
   }
 
   logout() {
