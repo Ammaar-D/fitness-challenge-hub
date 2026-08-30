@@ -1,35 +1,19 @@
 const DEFAULT_DATA = {
   users: [
-    { id: 'u1', name: 'Ammaar', role: 'admin', authorized: true, avatar: '👑' },
-    { id: 'u2', name: 'Zaid', role: 'member', authorized: true, avatar: '⚡' },
-    { id: 'u3', name: 'Farhan', role: 'member', authorized: true, avatar: '🔥' },
-    { id: 'u4', name: 'Tariq', role: 'member', authorized: false, avatar: '🌟' }
+    { id: 'u_ammaar', name: 'Ammaar', role: 'admin', authorized: true, avatar: '👑' }
   ],
-  activeUserId: 'u1',
+  activeUserId: null,
   adminUnlocked: false,
   adminPinHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
   adminBackdateOverride: false,
   currentMonth: '2026-08',
-  logs: {
-    'u1': {
-      '2026-08-30': { habits: { water: true, soda: true, screen: true }, exercises: [{ id: 'e1', name: 'Gym', minutes: 60 }] },
-      '2026-08-29': { habits: { water: true, soda: false, screen: true }, exercises: [{ id: 'e2', name: 'Running', minutes: 45 }] },
-      '2026-08-28': { habits: { water: true, soda: true, screen: false }, exercises: [{ id: 'e3', name: 'Gym', minutes: 75 }] }
-    },
-    'u2': {
-      '2026-08-30': { habits: { water: true, soda: true, screen: false }, exercises: [{ id: 'e4', name: 'Running', minutes: 50 }] },
-      '2026-08-29': { habits: { water: true, soda: true, screen: true }, exercises: [{ id: 'e5', name: 'Gym', minutes: 60 }] }
-    },
-    'u3': {
-      '2026-08-30': { habits: { water: false, soda: true, screen: true }, exercises: [{ id: 'e6', name: 'Walking', minutes: 40 }] },
-      '2026-08-28': { habits: { water: true, soda: false, screen: false }, exercises: [{ id: 'e7', name: 'Swimming', minutes: 30 }] }
-    }
-  }
+  logs: {}
 };
 
 class FitnessApp {
   constructor() {
     this.data = this.loadStorage();
+    this.selectedAuthUserId = 'u_ammaar';
     this.selectedDate = this.getTodayDateString();
     this.currentTab = 'home';
     this.leaderboardType = 'hours';
@@ -37,7 +21,7 @@ class FitnessApp {
 
   loadStorage() {
     try {
-      const stored = localStorage.getItem('fitness_challenge_hub_data');
+      const stored = localStorage.getItem('fitness_challenge_hub_v3');
       return stored ? JSON.parse(stored) : DEFAULT_DATA;
     } catch (e) {
       return DEFAULT_DATA;
@@ -46,14 +30,14 @@ class FitnessApp {
 
   saveStorage() {
     try {
-      localStorage.setItem('fitness_challenge_hub_data', JSON.stringify(this.data));
+      localStorage.setItem('fitness_challenge_hub_v3', JSON.stringify(this.data));
     } catch (e) {
       console.error("Storage save error:", e);
     }
   }
 
   getActiveUser() {
-    return this.data.users.find(u => u.id === this.data.activeUserId) || this.data.users[0];
+    return this.data.users.find(u => u.id === this.data.activeUserId) || null;
   }
 
   getTodayDateString() {
@@ -62,13 +46,19 @@ class FitnessApp {
   }
 
   init() {
-    this.renderHeader();
-    this.renderDateSelector();
-    this.renderDailyLog();
-    this.renderLeaderboard();
-    this.renderHomeStats();
+    if (!this.data.activeUserId) {
+      this.showAuthGateway();
+    } else {
+      this.hideAuthGateway();
+      this.renderHeader();
+      this.renderDateSelector();
+      this.renderDailyLog();
+      this.renderLeaderboard();
+      this.renderHomeStats();
+    }
     if (window.lucide) lucide.createIcons();
   }
+
 
   switchTab(tabId) {
     this.currentTab = tabId;
@@ -96,9 +86,12 @@ class FitnessApp {
 
   renderHeader() {
     const user = this.getActiveUser();
+    if (!user) return;
+
     document.getElementById('activeUserNameDisplay').innerText = `${user.name} (${user.role === 'admin' ? 'Admin' : 'Member'})`;
     const dot = document.getElementById('userStatusDot');
     const alertBox = document.getElementById('unauthAlert');
+    const shieldBtn = document.getElementById('adminShieldBtn');
 
     if (user.authorized) {
       dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
@@ -106,6 +99,13 @@ class FitnessApp {
     } else {
       dot.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
       alertBox.classList.remove('hidden');
+    }
+
+    // Shield ONLY visible on Ammaar (Admin) account
+    if (user.role === 'admin') {
+      shieldBtn.classList.remove('hidden');
+    } else {
+      shieldBtn.classList.add('hidden');
     }
 
     const now = new Date();
@@ -429,50 +429,115 @@ class FitnessApp {
     document.getElementById('userMyRank').innerText = `#${rank}`;
   }
 
-  openUserModal() {
-    const listEl = document.getElementById('userSelectList');
+  showAuthGateway() {
+    document.getElementById('authGateway').classList.remove('hidden');
+    document.getElementById('authGateway').classList.add('flex');
+    this.renderAuthProfiles();
+    if (window.lucide) lucide.createIcons();
+  }
+
+  hideAuthGateway() {
+    document.getElementById('authGateway').classList.add('hidden');
+    document.getElementById('authGateway').classList.remove('flex');
+  }
+
+  setAuthMode(mode) {
+    const tabLogin = document.getElementById('authTabLogin');
+    const tabRegister = document.getElementById('authTabRegister');
+    const formLogin = document.getElementById('authLoginForm');
+    const formRegister = document.getElementById('authRegisterForm');
+
+    if (mode === 'login') {
+      tabLogin.className = 'flex-1 py-2 rounded-lg bg-blue-600 text-white transition';
+      tabRegister.className = 'flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition';
+      formLogin.classList.remove('hidden');
+      formRegister.classList.add('hidden');
+    } else {
+      tabRegister.className = 'flex-1 py-2 rounded-lg bg-blue-600 text-white transition';
+      tabLogin.className = 'flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition';
+      formRegister.classList.remove('hidden');
+      formLogin.classList.add('hidden');
+    }
+    if (window.lucide) lucide.createIcons();
+  }
+
+  renderAuthProfiles() {
+    const listEl = document.getElementById('authProfilesList');
     listEl.innerHTML = this.data.users.map(u => {
-      const isActive = u.id === this.data.activeUserId;
+      const isSelected = u.id === this.selectedAuthUserId;
       return `
-        <button onclick="app.switchActiveUser('${u.id}')" class="w-full p-3 rounded-xl border flex items-center justify-between transition ${isActive ? 'bg-blue-600/20 border-sky-400 text-white' : 'bg-[#0b1d33]/40 border-white/5 text-slate-300 hover:bg-[#0f294a]'}">
+        <button onclick="app.selectAuthProfile('${u.id}')" class="w-full p-3 rounded-xl border flex items-center justify-between transition ${isSelected ? 'bg-blue-600/30 border-sky-400 text-white' : 'bg-[#07111e] border-white/10 text-slate-300 hover:bg-[#0f294a]'}">
           <div class="flex items-center gap-2.5">
             <span class="text-lg">${u.avatar}</span>
             <div class="text-left">
               <div class="text-xs font-bold">${u.name}</div>
-              <div class="text-[10px] text-slate-400">${u.role.toUpperCase()} • ${u.authorized ? 'Authorized' : 'Pending'}</div>
+              <div class="text-[10px] text-slate-400">${u.role === 'admin' ? 'Challenge Creator (Admin)' : (u.authorized ? 'Authorized Member' : 'Pending Approval')}</div>
             </div>
           </div>
-          ${isActive ? '<i data-lucide="check" class="w-4 h-4 text-sky-400"></i>' : ''}
+          ${isSelected ? '<i data-lucide="check-circle-2" class="w-4 h-4 text-sky-400"></i>' : ''}
         </button>
       `;
     }).join('');
 
-    document.getElementById('userModal').classList.remove('hidden');
-    document.getElementById('userModal').classList.add('flex');
+    const targetUser = this.data.users.find(u => u.id === this.selectedAuthUserId);
+    const passContainer = document.getElementById('adminPassInputContainer');
+    if (targetUser && targetUser.role === 'admin') {
+      passContainer.classList.remove('hidden');
+    } else {
+      passContainer.classList.add('hidden');
+    }
+
     if (window.lucide) lucide.createIcons();
   }
 
-  closeUserModal() {
-    document.getElementById('userModal').classList.add('hidden');
-    document.getElementById('userModal').classList.remove('flex');
+  selectAuthProfile(userId) {
+    this.selectedAuthUserId = userId;
+    this.renderAuthProfiles();
   }
 
-  switchActiveUser(userId) {
-    this.data.activeUserId = userId;
+  async executeLogin() {
+    const targetUser = this.data.users.find(u => u.id === this.selectedAuthUserId);
+    if (!targetUser) return;
+
+    if (targetUser.role === 'admin') {
+      const pass = document.getElementById('loginAdminPassword').value;
+      const msgBuffer = new TextEncoder().encode(pass);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      if (hashHex !== this.data.adminPinHash) {
+        alert('Incorrect Admin Password!');
+        return;
+      }
+      this.data.adminUnlocked = true;
+    }
+
+    this.data.activeUserId = targetUser.id;
     this.saveStorage();
-    this.closeUserModal();
-    this.init();
+    this.hideAuthGateway();
+    this.renderHeader();
+    this.renderDateSelector();
+    this.renderDailyLog();
+    this.renderLeaderboard();
+    this.renderHomeStats();
+    if (window.lucide) lucide.createIcons();
   }
 
-  registerUser(e) {
+  executeRegister(e) {
     e.preventDefault();
     if (this.data.users.length >= 5) {
-      alert("Maximum 5 users reached for this private group!");
+      alert('Maximum 5 users reached for this private group!');
       return;
     }
 
-    const name = document.getElementById('newUserNameInput').value.trim();
+    const name = document.getElementById('registerNicknameInput').value.trim();
     if (!name) return;
+
+    if (this.data.users.some(u => u.name.toLowerCase() === name.toLowerCase())) {
+      alert('A user with this name already exists! Please choose another nickname.');
+      return;
+    }
 
     const newUser = {
       id: 'u_' + Date.now(),
@@ -483,14 +548,27 @@ class FitnessApp {
     };
 
     this.data.users.push(newUser);
+    this.selectedAuthUserId = newUser.id;
     this.data.activeUserId = newUser.id;
     this.saveStorage();
-    document.getElementById('newUserNameInput').value = '';
-    this.closeUserModal();
+
+    document.getElementById('registerNicknameInput').value = '';
+    this.hideAuthGateway();
     this.init();
+    alert('Account created! Your status is Pending until approved by Ammaar.');
+  }
+
+  logout() {
+    this.data.activeUserId = null;
+    this.data.adminUnlocked = false;
+    this.saveStorage();
+    this.showAuthGateway();
   }
 
   openAdminModal() {
+    const user = this.getActiveUser();
+    if (!user || user.role !== 'admin') return;
+
     document.getElementById('adminModal').classList.remove('hidden');
     document.getElementById('adminModal').classList.add('flex');
     if (this.data.adminUnlocked) {
@@ -520,7 +598,7 @@ class FitnessApp {
       document.getElementById('adminPinInput').value = '';
       this.openAdminModal();
     } else {
-      alert("Incorrect Admin PIN! Default is 1234");
+      alert('Incorrect Admin PIN!');
     }
   }
 
@@ -536,9 +614,11 @@ class FitnessApp {
               <div class="text-[10px] ${u.authorized ? 'text-emerald-400' : 'text-amber-400'}">${u.authorized ? 'Authorized' : 'Pending Admin Approval'}</div>
             </div>
           </div>
-          <button onclick="app.toggleUserAuth('${u.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${u.authorized ? 'bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'}">
-            ${u.authorized ? 'Revoke' : 'Approve'}
-          </button>
+          ${u.role === 'admin' ? '<span class="text-[10px] text-sky-400 font-semibold">Admin</span>' : `
+            <button onclick="app.toggleUserAuth('${u.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${u.authorized ? 'bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30'}">
+              ${u.authorized ? 'Revoke' : 'Approve'}
+            </button>
+          `}
         </div>
       `;
     }).join('');
@@ -549,13 +629,13 @@ class FitnessApp {
       overrideBtn.className = "w-full py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-xs";
     } else {
       overrideBtn.innerText = "Unlock & Allow Backdating for All Dates";
-      overrideBtn.className = "w-full py-2 rounded-xl bg-[#0b1d33] border border-amber-500/30 text-amber-300 font-bold text-xs";
+      overrideBtn.className = "w-full py-2 rounded-xl bg-[#0b1d33] border border-amber-500/30 text-amber-300 font-bold text-xs hover:bg-[#0f294a] transition";
     }
   }
 
   toggleUserAuth(userId) {
     const user = this.data.users.find(u => u.id === userId);
-    if (user) {
+    if (user && user.role !== 'admin') {
       user.authorized = !user.authorized;
       this.saveStorage();
       this.renderAdminPanel();

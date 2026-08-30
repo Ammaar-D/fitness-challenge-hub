@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -12,6 +12,67 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="min-h-screen flex flex-col antialiased pb-24 md:pb-8 selection:bg-sky-400 selection:text-slate-900">
+
+  <!-- AUTH GATEWAY OVERLAY (EVERY VISIT OPENS HERE FIRST) -->
+  <div id="authGateway" class="fixed inset-0 z-50 bg-[#07111e] flex flex-col items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div class="max-w-md w-full glass-card rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl space-y-6">
+      
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-400 flex items-center justify-center shadow-lg shadow-blue-500/30">
+          <i data-lucide="flame" class="w-8 h-8 text-white"></i>
+        </div>
+        <h2 class="text-2xl font-extrabold text-white tracking-tight">Fitness Challenge Hub</h2>
+        <p class="text-xs text-slate-400">Sign in to your participant profile or register to join</p>
+      </div>
+
+      <div class="flex rounded-xl bg-[#0b1d33] p-1 border border-white/10 text-xs font-bold">
+        <button onclick="app.setAuthMode('login')" id="authTabLogin" class="flex-1 py-2 rounded-lg bg-blue-600 text-white transition">
+          Sign In
+        </button>
+        <button onclick="app.setAuthMode('register')" id="authTabRegister" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-white transition">
+          New Participant
+        </button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="authLoginForm" class="space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1.5 block">Select Your Profile</label>
+          <div id="authProfilesList" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar"></div>
+        </div>
+
+        <!-- Admin Password Box (Appears only when Ammaar is selected) -->
+        <div id="adminPassInputContainer" class="hidden space-y-2 pt-2 border-t border-white/10">
+          <label class="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i> Ammaar Admin Password
+          </label>
+          <input type="password" id="loginAdminPassword" placeholder="Enter password (1234)..." class="w-full px-4 py-2.5 rounded-xl bg-[#07111e] border border-sky-400/40 text-white text-sm focus:outline-none focus:ring-1 focus:ring-sky-400">
+        </div>
+
+        <button onclick="app.executeLogin()" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-sky-400 font-bold text-white text-sm hover:opacity-95 shadow-lg shadow-blue-500/25 transition">
+          Enter Challenge Hub
+        </button>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <form id="authRegisterForm" onsubmit="app.executeRegister(event)" class="hidden space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-slate-300 mb-1.5 block">Your Nickname / Name</label>
+          <input type="text" id="registerNicknameInput" required placeholder="e.g. Sarah, David, Alex..." class="w-full px-4 py-2.5 rounded-xl bg-[#07111e] border border-white/10 text-white text-sm focus:outline-none focus:border-sky-400">
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-blue-900/20 border border-blue-500/20 text-xs text-slate-300 leading-relaxed">
+          <span class="font-bold text-sky-400">Notice:</span> After registering, Ammaar (Admin) will authorize your account before you can log daily points.
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-sky-400 font-bold text-white text-sm hover:opacity-95 shadow-lg shadow-blue-500/25 transition">
+          Request to Join Challenge
+        </button>
+      </form>
+
+    </div>
+  </div>
+
 
   <!-- TOP HEADER -->
   <header class="sticky top-0 z-40 bg-[#07111e]/90 backdrop-blur-md border-b border-white/10 px-4 py-3 sm:px-6">
@@ -29,13 +90,16 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <button id="userSwitchBtn" onclick="app.openUserModal()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0b1d33] border border-white/10 text-xs font-medium text-slate-200 hover:bg-[#0f294a] transition">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0b1d33] border border-white/10 text-xs font-medium text-slate-200">
           <div class="w-2.5 h-2.5 rounded-full bg-emerald-400" id="userStatusDot"></div>
           <span id="activeUserNameDisplay">Ammaar (Admin)</span>
-          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
-        </button>
+          <button onclick="app.logout()" title="Log Out / Switch Account" class="ml-1 text-slate-400 hover:text-red-400 transition">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
 
-        <button onclick="app.openAdminModal()" title="Admin & Security Hub" class="p-2 rounded-lg bg-[#0b1d33] border border-white/10 text-slate-300 hover:text-sky-400 hover:bg-[#0f294a] transition">
+        <!-- Shield Button: ONLY rendered for Admin Ammaar -->
+        <button id="adminShieldBtn" onclick="app.openAdminModal()" title="Admin & Security Hub" class="hidden p-2 rounded-lg bg-[#0b1d33] border border-white/10 text-slate-300 hover:text-sky-400 hover:bg-[#0f294a] transition">
           <i data-lucide="shield" class="w-4 h-4"></i>
         </button>
       </div>
@@ -455,32 +519,6 @@
     </div>
   </nav>
 
-  <!-- USER SWITCH MODAL -->
-  <div id="userModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="glass-card rounded-2xl p-6 border border-white/10 max-w-md w-full space-y-4 shadow-2xl">
-      <div class="flex items-center justify-between border-b border-white/10 pb-3">
-        <h3 class="font-bold text-white text-base flex items-center gap-2">
-          <i data-lucide="users" class="w-5 h-5 text-sky-400"></i> Switch User / Register
-        </h3>
-        <button onclick="app.closeUserModal()" class="text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="space-y-2" id="userSelectList"></div>
-
-      <!-- Add New User Form -->
-      <form onsubmit="app.registerUser(event)" class="pt-3 border-t border-white/10 space-y-2">
-        <label class="text-xs font-semibold text-slate-400">Join as New Participant (Up to 5)</label>
-        <div class="flex gap-2">
-          <input type="text" id="newUserNameInput" required placeholder="Enter nickname..." class="flex-1 px-3.5 py-2 rounded-xl bg-[#07111e] border border-white/10 text-white text-xs focus:outline-none focus:border-sky-400">
-          <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white text-xs transition">
-            Request Join
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
 
   <!-- ADMIN MODAL -->
   <div id="adminModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
@@ -496,7 +534,7 @@
 
       <!-- Admin Passkey Prompt -->
       <div id="adminAuthSection" class="space-y-3">
-        <p class="text-xs text-slate-400">Enter Admin PIN (Default: <code class="text-sky-400 font-mono">1234</code>) to manage member approvals:</p>
+        <label class="text-xs font-semibold text-slate-300 block">Enter Admin PIN</label>
         <div class="flex gap-2">
           <input type="password" id="adminPinInput" placeholder="Enter PIN..." class="flex-1 px-3.5 py-2 rounded-xl bg-[#07111e] border border-white/10 text-white text-xs focus:outline-none focus:border-sky-400">
           <button onclick="app.unlockAdmin()" class="px-4 py-2 rounded-xl bg-sky-400 font-bold text-slate-900 text-xs hover:opacity-90 transition">
